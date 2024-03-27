@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class UserService {
-    users: string[] = ['KYJ', 'LJW', 'KHS'];
+    users: string[] = ['KYJ', 'LJW', 'KHS', 'ABC'];
 
     getUsers(): string[] {
         return this.users;
