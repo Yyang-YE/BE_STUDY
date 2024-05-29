@@ -1,93 +1,89 @@
-import { HttpException, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Injectable } from '@nestjs/common';
 import { PostEntity, UserEntity } from 'src/entities';
-import { Repository } from 'typeorm';
+import { UserRepository } from 'src/repositories/user.repository';
+import { UserResponseDto } from './dtos/user.response.dto';
+import { EmailRequestDto, PasswordRequestDto, UserRequestDto } from './dtos/user.request.dto';
+//이따 여따 PostRepository 임포트하기
 
 @Injectable()
 export class UserService {
-    constructor(
-        @InjectRepository(UserEntity)
-        private readonly userRepository: Repository<UserEntity>,
-        @InjectRepository(PostEntity)
-        private readonly postRepository: Repository<PostEntity>,
-    ) {}
+    constructor(private readonly userRepository: UserRepository) {}
 
-    async getUsers(): Promise<UserEntity[]> {
-        const users = await this.userRepository.find();
+    async getUsers(): Promise<UserResponseDto[]> {
+        const userEntity = await this.userRepository.findAll();
+        const users = userEntity.map((user) => new UserResponseDto(user));
         return users;
     }
 
     async findByEmail(email: string): Promise<UserEntity> {
-        const user = await this.userRepository.findOne({ where: { email }});
-        return user;
+        const userEntity = await this.userRepository.findByEmail(email);
+        return userEntity;
     }
 
-    async addUser(info: UserEntity): Promise<UserEntity | void> {
-        if(!(await this.findByEmail(info.email))) {
-            const user = this.userRepository.create(info);
-            //DB 직접 접근은 Promise! 그래서 await 필요라고 생각하기
-            return await this.userRepository.save(info);
-        } else {
-            throw new HttpException('user already exists', 409);
-        }
+    async findByVal(key: keyof UserEntity, val: any): Promise<UserEntity> {
+        const userEntity = await this.userRepository.findByVal(key, val);
+        return userEntity;
     }
 
-    async deleteUser(email: string): Promise<void> {
-        if (await this.findByEmail(email)) {
-            await this.userRepository.delete({ email });
-        } else {
-            throw new HttpException('user not found', 404);
-        }
+    async addUser(body: UserRequestDto): Promise<UserResponseDto> {
+        const newUserEntity = await this.userRepository.create(body);
+        const newUser = new UserResponseDto(newUserEntity);
+        return newUser;
     }
 
-    async updatePassword(email: string, password: string): Promise<void> {
-        if (await this.findByEmail(email)) {
-            await this.userRepository.update({ email }, { password });
-        } else {
-            throw new HttpException('user not found', 404);
-        }
+    async deleteUser(body: EmailRequestDto): Promise<void> {
+        await this.userRepository.deleteByEmail(body.email);
     }
 
-    //postEntity
-    async getPosts(): Promise<PostEntity[]> {
-        const posts = await this.postRepository.find();
-        return posts;
+    async updatePassword(body: PasswordRequestDto): Promise<void> {
+        await this.userRepository.updatePassword(body.email, body.password);
     }
 
-    async findById(id: number): Promise<PostEntity> {
-        const post = await this.postRepository.findOne({ where: { id } });
-        return post;
+    async updateToken(email: string, token: string): Promise<void> {
+        await this.userRepository.updateToken(email, token);
     }
 
-    async addPost(title: string, content: string, likes: number, author_id: number): Promise<PostEntity | void> {
-        const author = await this.userRepository.findOne({ where: { id: author_id } });
+    //postEntity (깃헙 보고 다시 적어넣기)
 
-        if(!author) {
-            throw new HttpException('user dose not exists', 409);
-        } else {
-            const post = new PostEntity();
-            post.title = title;
-            post.content = content;
-            post.likes = likes;
-            post.author_id = author;
+    // async getPosts(): Promise<PostEntity[]> {
+    //     const posts = await this.postRepository.find();
+    //     return posts;
+    // }
 
-            return await this.postRepository.save(post);
-        }
-    }
+    // async findById(id: number): Promise<PostEntity> {
+    //     const post = await this.postRepository.findOne({ where: { id } });
+    //     return post;
+    // }
 
-    async deletePost(id: number): Promise<void> {
-        if (await this.findById(id)) {
-            await this.postRepository.delete({ id });
-        } else {
-            throw new HttpException('post not found', 404);
-        }
-    }
+    // async addPost(title: string, content: string, likes: number, author_id: number): Promise<PostEntity | void> {
+    //     const author = await this.userRepository.findOne({ where: { id: author_id } });
 
-    async updateContent(id: number, content: string): Promise<void> {
-        if (await this.findById(id)) {
-            await this.postRepository.update({ id }, { content });
-        } else {
-            throw new HttpException('post not found', 404);
-        }
-    }
+    //     if(!author) {
+    //         throw new HttpException('user dose not exists', 409);
+    //     } else {
+    //         const post = new PostEntity();
+    //         post.title = title;
+    //         post.content = content;
+    //         post.likes = likes;
+    //         post.author_id = author;
+
+    //         return await this.postRepository.save(post);
+    //     }
+    // }
+
+    // async deletePost(id: number): Promise<void> {
+    //     if (await this.findById(id)) {
+    //         await this.postRepository.delete({ id });
+    //     } else {
+    //         throw new HttpException('post not found', 404);
+    //     }
+    // }
+
+    // async updateContent(id: number, content: string): Promise<void> {
+    //     if (await this.findById(id)) {
+    //         await this.postRepository.update({ id }, { content });
+    //     } else {
+    //         throw new HttpException('post not found', 404);
+    //     }
+    // }
 }
