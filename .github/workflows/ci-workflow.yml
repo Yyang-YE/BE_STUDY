@@ -2,7 +2,7 @@ name: ci-workflows
 
 on:
   push:
-    branches: ['main']
+    branches: ['master']
 
 env:
   DOCKER_IMAGE: ghcr.io/kyeahxx19/bestudy
