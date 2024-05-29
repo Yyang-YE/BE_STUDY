@@ -1,9 +1,12 @@
+import { Rank } from "src/common/enums/rank.enum";
 import { 
+    BeforeInsert,
     Column,
     CreateDateColumn,
     Entity,
-    PrimaryGeneratedColumn 
+    PrimaryGeneratedColumn,
 } from "typeorm";
+import * as bcrypt from 'bcrypt';
 
 @Entity()
 export class UserEntity {
@@ -20,10 +23,20 @@ export class UserEntity {
     @Column()
     name: string;
 
+    @Column({ type: 'enum', enum: Rank, default: Rank.Bronze})
+    rank: Rank;
+
     @Column({ nullable: true })
     image?: string;
 
     @CreateDateColumn({ type: 'date' })
     createdAt: Date;
 
+    @Column({ nullable: true })
+    token?: string;
+
+    @BeforeInsert()
+    private beforeInsert() {
+        this.password = bcrypt.hashSync(this.password, 10);
+    }
 }
